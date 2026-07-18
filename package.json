@@ -1,31 +1,45 @@
 {
-  "name": "@globules-io/cordova-plugin-insomnia",
-  "version": "1.0.1",
-  "description": "Prevent the screen of the mobile device from falling asleep.",
+  "name": "cordova-plugin-boogie-insomnia",
+  "version": "1.0.0",
+  "description": "Keep the device screen awake from JavaScript (Android, iOS, browser). Promise-based fork of @globules-io/cordova-plugin-insomnia that re-asserts the keep-awake after camera/picker interruptions. JS global: boogieInsomnia.",
   "cordova": {
-    "id": "@globules-io/cordova-plugin-insomnia",
+    "id": "cordova-plugin-boogie-insomnia",
     "platforms": [
-      "ios",     
-      "windows",
-      "android"
+      "android",
+      "ios",
+      "browser"
     ]
+  },
+  "types": "./index.d.ts",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/globules-io/cordova-plugin-insomnia.git"
+    "url": "git+https://github.com/boogie/cordova-plugin-boogie-insomnia.git"
   },
-  "keywords": [
-    "ecosystem:cordova",
-    "cordova-ios",
-    "cordova-wp8",
-    "cordova-windows",
-    "cordova-android",
-    "cordova-firefoxos"
-  ],
-  "author": "globules.io",
-  "license": "MIT",
   "bugs": {
-    "url": "https://github.com/globules-io/cordova-plugin-insomnia/issues"
+    "url": "https://github.com/boogie/cordova-plugin-boogie-insomnia/issues"
   },
-  "homepage": "https://github.com/globules-io/cordova-plugin-insomnia#readme"
+  "homepage": "https://github.com/boogie/cordova-plugin-boogie-insomnia#readme",
+  "keywords": [
+    "insomnia",
+    "screen",
+    "awake",
+    "wakelock",
+    "keep-screen-on",
+    "sleep",
+    "ecosystem:cordova",
+    "cordova-android",
+    "cordova-ios",
+    "cordova-browser"
+  ],
+  "engines": [
+    {
+      "name": "cordova",
+      "version": ">=9.0.0"
+    }
+  ],
+  "author": "András Bártházi",
+  "license": "MIT"
 }

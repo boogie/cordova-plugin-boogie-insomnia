@@ -1,44 +1,49 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android" id="@globules-io/cordova-plugin-insomnia" version="1.0.1">
-  <name>Insomnia (prevent screen sleep)</name>
-  <description>Prevent the screen of the mobile device from falling asleep.</description>
-  <author></author>  
-  <repo>https://github.com/globules-io/cordova-plugin-insomnia.git</repo>
-  <issue>https://github.com/globules-io/cordova-plugin-insomnia/issues</issue>
-  <license>MIT</license>
-  <keywords>cordova,screen,awake</keywords>
-  <js-module src="www/Insomnia.js" name="Insomnia">
-    <clobbers target="insomnia"/>
-  </js-module>  
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+        id="cordova-plugin-boogie-insomnia"
+        version="1.0.0">
+    <name>Boogie Insomnia</name>
+    <description>Keep the device screen awake from JavaScript (Android, iOS, browser). Promise-based fork of @globules-io/cordova-plugin-insomnia that re-asserts the keep-awake after camera/picker interruptions. JS global: boogieInsomnia.</description>
+    <license>MIT</license>
+    <keywords>cordova,screen,awake,wakelock,insomnia,keep-screen-on</keywords>
 
-  <platform name="ios">
-    <config-file target="config.xml" parent="/*">
-      <feature name="Insomnia">
-        <param name="ios-package" value="Insomnia"/>
-      </feature>
-    </config-file>
-    <header-file src="src/ios/Insomnia.h"/>
-    <source-file src="src/ios/Insomnia.m"/>
-  </platform>
-  
-  <platform name="android">
-    <config-file target="res/xml/config.xml" parent="/*">
-        <feature name="Insomnia">
-            <param name="android-package" value="nl.xservices.plugins.Insomnia" />
-        </feature>
-    </config-file>
-    <source-file src="src/android/nl/xservices/plugins/Insomnia.java" target-dir="src/nl/xservices/plugins"/>
-  </platform>
+    <engines>
+        <engine name="cordova" version=">=9.0.0" />
+    </engines>
 
-  <platform name="browser">
-    <js-module src="src/browser/Insomnia.js" name="InsomniaProxy">
-      <merges target="insomnia" />
+    <js-module src="www/insomnia.js" name="insomnia">
+        <clobbers target="boogieInsomnia" />
     </js-module>
-  </platform> 
-  
-  <platform name="windows">
-    <js-module src="src/windows/InsomniaProxy.js" name="InsomniaProxy">
-      <runs />
-    </js-module>
-  </platform>  
+
+    <!-- ============================ Android ============================ -->
+    <platform name="android">
+        <config-file target="res/xml/config.xml" parent="/*">
+            <feature name="InsomniaPlugin">
+                <param name="android-package" value="hu.barthazi.insomnia.InsomniaPlugin" />
+            </feature>
+        </config-file>
+
+        <!-- FLAG_KEEP_SCREEN_ON is window-scoped: no WAKE_LOCK permission needed. -->
+        <source-file src="src/android/InsomniaPlugin.java" target-dir="src/hu/barthazi/insomnia" />
+    </platform>
+
+    <!-- ============================== iOS ============================== -->
+    <platform name="ios">
+        <config-file target="config.xml" parent="/*">
+            <feature name="InsomniaPlugin">
+                <param name="ios-package" value="InsomniaPlugin" />
+            </feature>
+        </config-file>
+
+        <header-file src="src/ios/InsomniaPlugin.h" />
+        <source-file src="src/ios/InsomniaPlugin.m" />
+    </platform>
+
+    <!-- ============================ Browser ============================ -->
+    <platform name="browser">
+        <!-- Screen Wake Lock API proxy; needs a secure context (HTTPS/localhost). -->
+        <js-module src="src/browser/insomnia.js" name="InsomniaProxy">
+            <runs />
+        </js-module>
+    </platform>
 </plugin>
