@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
         id="cordova-plugin-boogie-insomnia"
-        version="1.0.0">
+        version="1.1.0">
     <name>Boogie Insomnia</name>
     <description>Keep the device screen awake from JavaScript (Android, iOS, browser). Promise-based fork of @globules-io/cordova-plugin-insomnia that re-asserts the keep-awake after camera/picker interruptions. JS global: boogieInsomnia.</description>
     <license>MIT</license>

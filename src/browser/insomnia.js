@@ -3,6 +3,9 @@
 // is active the proxy re-acquires it on visibilitychange. Requires a secure
 // context (HTTPS or localhost).
 
+var ID = 'cordova-plugin-boogie-insomnia';
+var VERSION = '1.1.0'; // keep in sync with plugin.xml (the structure test checks)
+
 var active = false; // what the app asked for
 var sentinel = null; // the currently held WakeLockSentinel, if any
 var listening = false;
@@ -60,6 +63,21 @@ module.exports = {
 
   isKeptAwake: function (success) {
     success(active ? 1 : 0);
+  },
+
+  // Bridge contract v1: what this proxy is and can do, from static facts only —
+  // never fails. Same envelope as the native halves, platform "browser".
+  describe: function (success) {
+    success({
+      id: ID,
+      version: VERSION,
+      platform: 'browser',
+      api: 1,
+      actions: ['allowSleepAgain', 'describe', 'isKeptAwake', 'keepAwake'],
+      features: {
+        reassertOnResume: true // re-acquired on visibilitychange while active
+      }
+    });
   }
 };
 

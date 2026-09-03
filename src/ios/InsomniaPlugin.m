@@ -1,6 +1,9 @@
 #import "InsomniaPlugin.h"
 #import <UIKit/UIKit.h>
 
+static NSString *const kInsomniaPluginId = @"cordova-plugin-boogie-insomnia";
+static NSString *const kInsomniaPluginVersion = @"1.1.0"; // keep in sync with plugin.xml
+
 @interface InsomniaPlugin ()
 @property (nonatomic, assign) BOOL keepAwakeActive;
 @end
@@ -52,6 +55,25 @@
 - (void)isKeptAwake:(CDVInvokedUrlCommand *)command {
   CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
                                                 messageAsBool:self.keepAwakeActive];
+  [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+}
+
+// Bridge contract v1: what this native half is and can do, from static facts
+// only — no permissions, no I/O, never fails. `actions` lists every selector
+// Cordova can dispatch here, sorted.
+- (void)describe:(CDVInvokedUrlCommand *)command {
+  NSDictionary *envelope = @{
+    @"id": kInsomniaPluginId,
+    @"version": kInsomniaPluginVersion,
+    @"platform": @"ios",
+    @"api": @1,
+    @"actions": @[@"allowSleepAgain", @"describe", @"isKeptAwake", @"keepAwake"],
+    @"features": @{
+      @"reassertOnResume": @YES // UIApplicationDidBecomeActiveNotification re-disables the idle timer
+    }
+  };
+  CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
+                                          messageAsDictionary:envelope];
   [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
 }
 

@@ -83,3 +83,69 @@ test('index.d.ts declares every bridge method', () => {
   }
   assert.ok(dts.includes('declare var boogieInsomnia'), 'index.d.ts must declare the global');
 });
+
+// ---- Bridge contract v1: describe + raw exec --------------------------------
+// The same invariants every boogie* plugin keeps: one version literal that agrees
+// with plugin.xml wherever it lives, "describe" dispatched on every platform, and
+// the action list describe reports equal to what that platform really dispatches.
+
+const javaSrc = fs.readFileSync(path.join(root, 'src', 'android', 'InsomniaPlugin.java'), 'utf8');
+const objcSrc = fs.readFileSync(path.join(root, 'src', 'ios', 'InsomniaPlugin.m'), 'utf8');
+const objcHeader = fs.readFileSync(path.join(root, 'src', 'ios', 'InsomniaPlugin.h'), 'utf8');
+const browserJs = fs.readFileSync(path.join(root, 'src', 'browser', 'insomnia.js'), 'utf8');
+const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
+
+test('the version literal agrees with plugin.xml everywhere it lives', () => {
+  const literals = {
+    'www/insomnia.js': bridgeJs.match(/var VERSION = '([^']+)'/)[1],
+    'src/browser/insomnia.js': browserJs.match(/var VERSION = '([^']+)'/)[1],
+    'src/android/InsomniaPlugin.java': javaSrc.match(/String VERSION = "([^"]+)"/)[1],
+    'src/ios/InsomniaPlugin.m': objcSrc.match(/kInsomniaPluginVersion = @"([^"]+)"/)[1],
+    'README.md': readme.match(/"version": "([^"]+)"/)[1]
+  };
+  for (const [file, version] of Object.entries(literals)) {
+    assert.equal(version, pluginVersion, `${file} states ${version}, plugin.xml says ${pluginVersion}`);
+  }
+});
+
+test('the ID literal agrees with plugin.xml everywhere it lives', () => {
+  assert.equal(bridgeJs.match(/var ID = '([^']+)'/)[1], pluginId);
+  assert.equal(browserJs.match(/var ID = '([^']+)'/)[1], pluginId);
+  assert.equal(javaSrc.match(/String PLUGIN_ID = "([^"]+)"/)[1], pluginId);
+  assert.equal(objcSrc.match(/kInsomniaPluginId = @"([^"]+)"/)[1], pluginId);
+});
+
+test('"describe" is dispatched on every platform', () => {
+  assert.ok(javaSrc.includes('case "describe"'), 'Android is missing describe');
+  assert.ok(objcSrc.includes('- (void)describe:(CDVInvokedUrlCommand'), 'iOS is missing describe');
+  assert.ok(objcHeader.includes('- (void)describe:(CDVInvokedUrlCommand'), 'iOS header is missing describe');
+  assert.ok(/^  describe: function/m.test(browserJs), 'browser proxy is missing describe');
+});
+
+test('each platform reports exactly the actions it dispatches, sorted', () => {
+  const sorted = (list) => [...list].sort();
+
+  const javaDispatched = [...javaSrc.matchAll(/case "(\w+)":/g)].map((m) => m[1]);
+  const javaReported = [...javaSrc.match(/String\[\] ACTIONS = \{([^}]*)\}/)[1].matchAll(/"(\w+)"/g)].map((m) => m[1]);
+  assert.deepEqual(javaReported, sorted(javaDispatched), 'Android ACTIONS drifted from execute()');
+
+  const objcDispatched = [...objcSrc.matchAll(/^- \(void\)(\w+):\(CDVInvokedUrlCommand/gm)].map((m) => m[1]);
+  const objcReported = [...objcSrc.match(/@"actions": @\[([^\]]*)\]/)[1].matchAll(/@"(\w+)"/g)].map((m) => m[1]);
+  assert.deepEqual(objcReported, sorted(objcDispatched), 'iOS actions drifted from the selectors');
+
+  const browserDispatched = [...browserJs.matchAll(/^  (\w+): function/gm)].map((m) => m[1]);
+  const browserReported = [...browserJs.match(/actions: \[([^\]]*)\]/)[1].matchAll(/'(\w+)'/g)].map((m) => m[1]);
+  assert.deepEqual(browserReported, sorted(browserDispatched), 'browser actions drifted from the proxy');
+
+  for (const list of [javaReported, objcReported, browserReported]) {
+    assert.ok(list.includes('describe'));
+  }
+});
+
+test('exec() forwards its action verbatim — exempt from the closed action set', () => {
+  // The named methods go through callNative('literal'), which the platform check
+  // above enforces; the raw passthrough must reach cordova.exec with the caller's
+  // action untouched and args defaulting to [].
+  assert.match(bridgeJs, /SERVICE, action, args \|\| \[\]\)/);
+  assert.ok(!/callNative\('describe'\)/.test(bridgeJs), 'describe() should use the raw path');
+});

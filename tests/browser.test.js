@@ -75,7 +75,7 @@ test('registers all bridge actions with the exec proxy', () => {
 
   assert.equal(proxyRegistrations.length, 1);
   assert.equal(proxyRegistrations[0].service, 'InsomniaPlugin');
-  for (const action of ['keepAwake', 'allowSleepAgain', 'isKeptAwake']) {
+  for (const action of ['keepAwake', 'allowSleepAgain', 'isKeptAwake', 'describe']) {
     assert.equal(typeof proxyRegistrations[0].impl[action], 'function', `missing action: ${action}`);
   }
 });
@@ -191,4 +191,25 @@ test('no re-acquire on visibilitychange after allowSleepAgain()', async () => {
   await flushAsync();
 
   assert.equal(wakeLock.requests, 1);
+});
+
+test('describe() reports the browser envelope without touching the Wake Lock API', () => {
+  const { wakeLock } = installFakeEnvironment();
+  const proxy = loadBrowserProxy();
+  const cb = callbacks();
+
+  let envelope;
+  proxy.describe((value) => { envelope = value; }, cb.error);
+
+  assert.deepEqual(cb.errors, []);
+  assert.equal(envelope.id, 'cordova-plugin-boogie-insomnia');
+  assert.match(envelope.version, /^\d+\.\d+\.\d+$/);
+  assert.equal(envelope.platform, 'browser');
+  assert.equal(envelope.api, 1);
+  assert.deepEqual(envelope.actions, [...envelope.actions].sort());
+  for (const action of Object.keys(proxy)) {
+    assert.ok(envelope.actions.includes(action), `describe() omits action: ${action}`);
+  }
+  assert.equal(envelope.features.reassertOnResume, true);
+  assert.equal(wakeLock.requests, 0);
 });

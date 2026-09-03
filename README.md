@@ -64,6 +64,58 @@ without a prior `keepAwake()` simply resolves.
 
 Resolves a boolean: whether keep-awake is currently requested.
 
+## Describe and raw exec
+
+A Cordova plugin's JS bridge (`www/insomnia.js`) ships frozen together with its
+native half — an over-the-air update of the app's web code never replaces
+`plugins/`. App code newer than the bridge therefore gets two uniform escape
+hatches, the same on every `boogie*` plugin (bridge contract v1):
+
+### `describe()`
+
+Resolves what the native half is and can do. Cheap and side-effect free — no
+permission prompts, no I/O, no timers — and it never fails natively:
+
+```json
+{
+  "id": "cordova-plugin-boogie-insomnia",
+  "version": "1.1.0",
+  "platform": "android",
+  "api": 1,
+  "actions": ["allowSleepAgain", "describe", "isKeptAwake", "keepAwake"],
+  "features": { "reassertOnResume": true }
+}
+```
+
+`version` is the `plugin.xml` version the native half was built from, `platform`
+is `"android"`, `"ios"` or `"browser"`, `actions` lists every action that
+platform dispatches (sorted), and `features` holds plugin-specific static facts —
+here just `reassertOnResume`, the automatic re-assert after camera/picker
+interruptions (browser: re-acquire on `visibilitychange`).
+
+### `exec(action, args, onProgress)`
+
+Raw passthrough to `cordova.exec` for the `InsomniaPlugin` service, for reaching
+a native action this bridge does not expose. Resolves with the (first) native
+result; if `onProgress` is a function every native success callback is passed to
+it as well (for `keepCallback` streams). Rejects with an `Error` whose message is
+the native error string (or its `.message`, or its JSON) and whose `.native`
+holds the raw payload.
+
+```js
+const info = await boogieInsomnia.exec('describe');   // same as describe()
+```
+
+**Warning:** `exec()` bypasses the bridge entirely — no argument normalisation,
+no result coercion (`isKeptAwake` comes back as `1`/`0` on Android, not a
+boolean), no protection against unknown actions. Prefer the named methods.
+
+### `ID`, `VERSION`, `SERVICE`
+
+Read-only constants on the global: the plugin id, the bridge version (equals
+`plugin.xml` at install time — compare it with `describe().version` if you
+suspect a stale install), and the native service name (`InsomniaPlugin`).
+
 ## Behavior notes
 
 - **External UI can't silently undo it.** The upstream plugin documented a
@@ -110,6 +162,8 @@ plugin folder to `typeRoots`/`include`.
 - Windows/WP8 support dropped (`cordova-windows` is discontinued).
 - TypeScript definitions, tests (`npm test`, plain `node:test`, no
   dependencies), and GitHub Actions CI.
+- `describe()` / `exec()` / `ID` / `VERSION` / `SERVICE` — the bridge contract
+  shared by the `boogie*` plugins (see above).
 
 ## Ideas / roadmap
 
@@ -147,7 +201,9 @@ The suite unit-tests the JS bridge against a mocked `cordova/exec`, exercises
 the browser proxy against a faked `navigator.wakeLock`/`document` (acquire,
 release, denial, re-acquire on visibility), and cross-checks `plugin.xml`,
 `package.json`, `index.d.ts`, and the native sources for consistency (ids,
-versions, referenced files, action names).
+versions, referenced files, action names), including the bridge contract: one
+version literal everywhere, `describe` dispatched on every platform, and each
+platform's reported action list equal to what it actually dispatches.
 
 ## Layout
 
